@@ -1,0 +1,17 @@
+Metadata-Version: 2.1
+Name: lammps-helper-kevinwhitham
+Version: 0.1
+Summary: Helps with LAMMPS input/output
+Home-page: https://github.com/kevinwhitham/lammps_helper
+Author: Kevin Whitham
+Author-email: kevin.whitham@gmail.com
+License: UNKNOWN
+Description: # lammps_helper
+        Python code to help with input/output from the molecular dynamics package LAMMPS.
+        
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown

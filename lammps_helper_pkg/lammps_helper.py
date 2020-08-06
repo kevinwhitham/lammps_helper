@@ -416,17 +416,13 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
     If you have a file that gives atomic coordinates (a .cif or .xyz file),
     use atomsk to convert to a .lmp (LAMMPS) data file.
 
-    This function uses atomic coordinates in a LAMMPS to find and add bonds.
+    This function uses atomic coordinates in a LAMMPS file to find and add bonds.
     Bonds are made according to the bond_pairs parameter.
-
-    atoms within a cutoff distance
-    and add a bond info to the lammps data file
-    lammps_xyz_file: a LAMMPS style data file containing xyz coordinates of atoms
-    bond_pairs:
 
     Parameters
     ----------
-    lammps_xyz_file
+    lammps_xyz_file : str
+        path to a LAMMPS data file with atomic coordinates
     bond_pairs : list
         a list of dictionaries. Each dict contains
             element1 : str
@@ -441,6 +437,33 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
     numpy array
         column:  0                1           2           3       4          5          6         7  8  9 10
         bond_index bond_type_number atom1_index atom2_index comment atom1_type atom2_type Boundary: nx ny nz
+
+        bond_index : int
+            index of the bond
+        bond_type_number : int
+            bond type
+        atom1_index : int
+            index of one of the atoms in the bond
+        atom2_index : int
+            index of the other atom in the bond
+        comment : str
+            a hash (#) character followed by the names of the atoms in the bond, e.g. # N - C
+            all columns after this one are part of the comment
+        atom1_type : int
+            type of the atom with index atom1_index
+        atom2_type : int
+            type of the atom with index atom2_index
+        Boundary: : str
+            the string 'Boundary:' signifies that a bond crosses the cell/box boundary
+        nx : int
+            if a bond crosses the cell/box boundary, part of the molecule will be translated by nx unit
+            vectors in the x-direction
+        ny : int
+            if a bond crosses the cell/box boundary, part of the molecule will be translated by ny unit
+            vectors in the y-direction
+        nz : int
+            if a bond crosses the cell/box boundary, part of the molecule will be translated by nz unit
+            vectors in the z-direction
 
 
     """
