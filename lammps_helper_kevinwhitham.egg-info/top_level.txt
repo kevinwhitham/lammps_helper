@@ -1,1 +1,0 @@
-lammps_helper_pkg
