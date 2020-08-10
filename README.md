@@ -48,3 +48,5 @@ angles = lh.add_angle_dihedral_data(f'my_structure.lmp', bonds)
 
 With lammps_helper you must specify each type of bond by the names of the atoms and a cutoff distance (in whatever units are used in the LAMMPS file, probably Angstroms). Any atoms of those types within that distance will be bonded. This code is very simple and probably can't handle cyclic molecules. If you have a structure with rings I suggest you try moltemplate or lammps-interface.
 
+lammps_helper also has code useful for extracting data about molecular dipoles and for plotting distributions of dipole directions over time. See [the documentation](https://lammps-helper.readthedocs.io/en/latest/) for more info. lammps_helper is available on [github.](https://github.com/kevinwhitham/lammps_helper)
+

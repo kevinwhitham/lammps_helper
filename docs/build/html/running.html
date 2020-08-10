@@ -1,0 +1,192 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Running LAMMPS with lammps_helper &#8212; lammps_helper 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Dipoles" href="dipoles.html" />
+    <link rel="prev" title="Welcome to lammps_helper’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="running-lammps-with-lammps-helper">
+<h1>Running LAMMPS with lammps_helper<a class="headerlink" href="#running-lammps-with-lammps-helper" title="Permalink to this headline">¶</a></h1>
+<p>lammps_helper provides two things to help run LAMMPS simulations from python. One to help
+create LAMMPS input files and one to run them. I suggest you use an IPython environment
+such as Jupyter Lab.</p>
+<div class="section" id="creating-lammps-input-files">
+<h2>Creating LAMMPS input files:<a class="headerlink" href="#creating-lammps-input-files" title="Permalink to this headline">¶</a></h2>
+<p>At the beginning of your Jupyter Lab notebook, use this code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">lammps_helper</span> <span class="k">as</span> <span class="nn">lh</span>
+
+<span class="n">ip</span> <span class="o">=</span> <span class="n">get_ipython</span><span class="p">()</span>
+<span class="n">ip</span><span class="o">.</span><span class="n">register_magics</span><span class="p">(</span><span class="n">lh</span><span class="o">.</span><span class="n">lammps_magics</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then you can write LAMMPS files in your notebook and export them rather than writing
+them separately. Using the <cite>%%writetemplate</cite> cell magic, any python variables
+in your LAMMPS code will be replaced by their values during export. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">temperature</span> <span class="o">=</span> <span class="mi">300</span>
+<span class="n">output_base_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;my_lammps_output_</span><span class="si">{</span><span class="n">temperature</span><span class="si">}</span><span class="s1">K&#39;</span>
+<span class="n">simulation_steps</span> <span class="o">=</span> <span class="mi">20000</span>
+<span class="n">list_element_names</span> <span class="o">=</span> <span class="s1">&#39;Pb I N C H&#39;</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">%%</span><span class="n">writetemplate</span> <span class="ow">in</span><span class="o">.</span><span class="n">my_lammps_input_file</span>
+
+<span class="c1"># This is a LAMMPS input file</span>
+
+<span class="n">units</span>      <span class="n">real</span>
+<span class="n">dimension</span>  <span class="mi">3</span>
+<span class="n">boundary</span>   <span class="n">p</span> <span class="n">p</span> <span class="n">p</span>
+<span class="n">atom_style</span> <span class="n">full</span>
+
+<span class="n">pair_style</span>      <span class="n">lj</span><span class="o">/</span><span class="n">cut</span> <span class="mf">12.500</span>
+<span class="n">bond_style</span> <span class="n">harmonic</span>
+<span class="n">angle_style</span> <span class="n">harmonic</span>
+<span class="n">dihedral_style</span> <span class="n">charmm</span>
+
+<span class="n">read_data</span> <span class="n">data</span><span class="o">.</span><span class="n">my_lammps_data_file</span>
+
+<span class="n">thermo_style</span> <span class="n">custom</span> <span class="n">step</span> <span class="n">temp</span> <span class="n">etotal</span> <span class="n">spcpu</span> <span class="n">cpuremain</span>
+
+<span class="c1"># equillibrate at temperature</span>
+<span class="n">fix</span> <span class="n">fix_npt_equilibrate</span> <span class="nb">all</span> <span class="n">npt</span> <span class="n">temp</span> <span class="p">{</span><span class="n">temperature</span><span class="p">}</span> <span class="p">{</span><span class="n">temperature</span><span class="p">}</span> <span class="mi">100</span> <span class="n">iso</span> <span class="mf">1.0</span> <span class="mf">1.0</span> <span class="mi">500</span>
+<span class="n">dump</span> <span class="n">dump_trajectory_equilibrate</span> <span class="nb">all</span> <span class="n">dcd</span> <span class="mi">100</span> <span class="p">{</span><span class="n">output_base_name</span><span class="p">}</span><span class="n">_equilibration</span><span class="o">.</span><span class="n">dcd</span>
+<span class="n">dump_modify</span> <span class="n">dump_trajectory_equilibrate</span> <span class="n">unwrap</span> <span class="n">yes</span>
+<span class="n">run</span> <span class="p">{</span><span class="n">simulation_steps</span><span class="p">}</span>
+
+<span class="c1"># dump the system to check geometry</span>
+<span class="n">write_dump</span> <span class="nb">all</span> <span class="n">xyz</span> <span class="p">{</span><span class="n">output_base_name</span><span class="p">}</span><span class="n">_after_equilibrate</span><span class="o">.</span><span class="n">xyz</span> <span class="n">modify</span> <span class="n">element</span> <span class="p">{</span><span class="n">list_element_names</span><span class="p">}</span>
+
+<span class="n">unfix</span> <span class="n">fix_npt_equilibrate</span>
+<span class="n">undump</span> <span class="n">dump_trajectory_equilibrate</span>
+
+<span class="c1"># write restart file after equilibration</span>
+<span class="n">write_restart</span> <span class="p">{</span><span class="n">output_base_name</span><span class="p">}</span><span class="n">_after_equilibrate</span><span class="o">.</span><span class="n">restart</span>
+</pre></div>
+</div>
+<p>Will create a file named <cite>in.my_lammps_input_file</cite> that will run a simulation at 300 K
+for 20000 timesteps and the data files created by LAMMPS will share a common naming
+scheme that includes the temperature.</p>
+</div>
+<div class="section" id="running-lammps">
+<h2>Running LAMMPS<a class="headerlink" href="#running-lammps" title="Permalink to this headline">¶</a></h2>
+<p>To run your input file in LAMMPS, do this</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lh</span><span class="o">.</span><span class="n">run_lammps</span><span class="p">(</span><span class="s1">&#39;in.my_lammps_input_file&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;log_</span><span class="si">{</span><span class="n">output_base_name</span><span class="si">}</span><span class="s1">_equilibrate.lammps&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This simply issues the lmp_serial command. You may add variables here as well.
+See <code class="xref py py-func docutils literal notranslate"><span class="pre">run_lammps()</span></code> for more info. You will get output like this</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Running</span> <span class="n">calculation</span><span class="o">...</span>
+<span class="n">Writing</span> <span class="n">to</span> <span class="n">log_my_lammps_output_300K_equilibrate</span><span class="o">.</span><span class="n">lammps</span><span class="o">.</span>
+<span class="n">Calculation</span> <span class="n">started</span> <span class="n">at</span> <span class="mi">08</span><span class="o">-</span><span class="mi">06</span><span class="o">-</span><span class="mi">20</span> <span class="mi">16</span><span class="p">:</span><span class="mi">10</span><span class="p">:</span><span class="mi">45</span>
+<span class="n">Calculation</span> <span class="n">complete</span> <span class="n">at</span> <span class="mi">08</span><span class="o">-</span><span class="mi">06</span><span class="o">-</span><span class="mi">20</span> <span class="mi">16</span><span class="p">:</span><span class="mi">10</span><span class="p">:</span><span class="mi">45</span> <span class="ow">in</span> <span class="mi">0</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mf">00.076904</span><span class="o">.</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">lammps_helper</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Running LAMMPS with lammps_helper</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#creating-lammps-input-files">Creating LAMMPS input files:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-lammps">Running LAMMPS</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dipoles.html">Dipoles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topology.html">Topology</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to lammps_helper’s documentation!</a></li>
+      <li>Next: <a href="dipoles.html" title="next chapter">Dipoles</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Kevin Whitham.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/running.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

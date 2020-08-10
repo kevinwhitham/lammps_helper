@@ -10,6 +10,10 @@ Welcome to lammps_helper's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   running
+   dipoles
+   topology
+
 
 
 Indices and tables
