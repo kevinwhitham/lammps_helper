@@ -1,28 +1,42 @@
-from IPython.core.magic import (Magics, magics_class, line_magic, cell_magic, line_cell_magic, needs_local_scope)
+try:
+    shell = get_ipython().__class__.__name__
+    if shell is not None:
+        from IPython.core.magic import (Magics, magics_class, line_magic, cell_magic, line_cell_magic,
+                                        needs_local_scope)
 
-@magics_class
-class lammps_magics(Magics):
-    """
-    use %%writetemplate instead of %%writefile to substitute Python variables
-    e.g. 'dump 1 all xyz {output_base_name}.xyz'
-    output_base_name will be replaced with the value of the variable
-    """
-    
-    @line_cell_magic
-    @needs_local_scope
-    def writetemplate(self, line, cell = None, local_ns = None):
-        with open(line, 'w') as f:
-            args = eval('globals()', self.shell.user_ns, local_ns)
-            f.write(cell.format(**args))
-            print(f'Overwriting {line}')
+
+        @magics_class
+        class lammps_magics(Magics):
+            """
+            use %%writetemplate instead of %%writefile to substitute Python variables
+            e.g. 'dump 1 all xyz {output_base_name}.xyz'
+            output_base_name will be replaced with the value of the variable
+            """
+
+            @line_cell_magic
+            @needs_local_scope
+            def writetemplate(self, line, cell=None, local_ns=None):
+                with open(line, 'w') as f:
+                    args = eval('globals()', self.shell.user_ns, local_ns)
+                    f.write(cell.format(**args))
+                    print(f'Overwriting {line}')
+
+except NameError:
+    print('IPython not detected. %%writetemplate not available.')
         
 
 import subprocess 
 import shlex
-import glob, os
 import time
 import datetime
+import numpy as np
+import pandas as pd
+import mmap
+from io import StringIO
+import re
+import plotly.graph_objects as go
 
+#------------------------------------ Running LAMMPS -------------------------------------------------
 def run_lammps(input_file, log_file, variables = None):
     """
     Run lmp_serial -in input_file variables -log log_file
@@ -61,14 +75,39 @@ def run_lammps(input_file, log_file, variables = None):
     end_time = time.perf_counter()
 
     print(f'Calculation complete at {time.strftime("%m-%d-%y %H:%M:%S")} in {str(datetime.timedelta(seconds=(end_time - start_time)))}.')
-    
-    
-import numpy as np
-import pandas as pd
-import mmap
-from io import StringIO
-import re
 
+#------------------------------------ Log File -------------------------------------------------
+def get_thermo_data_from_log(filename):
+    """
+    Converts the data output by the LAMMPS thermo_style command to an array.
+
+    Parameters
+    ----------
+    filename : str
+        path to LAMMPS log file
+
+    Returns
+    -------
+    numpy array
+        thermo data with columns matching the LAMMPS thermo_style setting
+
+    """
+    with open(filename, 'r+') as f:
+        file_txt = mmap.mmap(f.fileno(), 0)
+        result = re.search(b'(Step Temp.*?\n)(.*?)(?=Loop?)', file_txt, re.DOTALL)
+        names = re.findall('\S+', result.group(1).decode('ascii'))
+        log_txt = StringIO(result.group(2).decode('ascii'))
+
+        print(f'Names of variables in log data: {names}')
+
+        # debug
+        # print(log_txt.readline())
+        # print(log_txt.readline())
+
+        # don't raise an exception if there are other lines of output in the thermo data
+        return np.genfromtxt(log_txt, names=names, invalid_raise=False)
+
+#------------------------------------ Dipoles -------------------------------------------------
 def get_dipole_data(dipole_data, dipole_file_name, location_file_name, temperature, append = False):
     """
     Convert output from LAMMPS compute_dipole to an array.
@@ -230,43 +269,6 @@ def get_dipole_data(dipole_data, dipole_file_name, location_file_name, temperatu
             
     return (dipole_data, row)
 
-from io import StringIO
-import numpy as np
-import re, mmap
-
-def get_thermo_data_from_log(filename):
-    """
-    Converts the data output by the LAMMPS thermo_style command to an array.
-
-    Parameters
-    ----------
-    filename : str
-        path to LAMMPS log file
-
-    Returns
-    -------
-    numpy array
-        thermo data with columns matching the LAMMPS thermo_style setting
-
-    """
-    with open(filename, 'r+') as f:
-        file_txt = mmap.mmap(f.fileno(), 0)
-        result = re.search(b'(Step Temp.*?\n)(.*?)(?=Loop?)', file_txt, re.DOTALL)
-        names  = re.findall('\S+', result.group(1).decode('ascii'))
-        log_txt = StringIO(result.group(2).decode('ascii'))
-    
-        print(f'Names of variables in log data: {names}')
-        
-        # debug
-        #print(log_txt.readline())
-        #print(log_txt.readline())
-        
-        # don't raise an exception if there are other lines of output in the thermo data
-        return np.genfromtxt(log_txt, names=names, invalid_raise = False)
-    
-    
-import plotly.graph_objects as go
-
 def make_dipole_contour_plot(dipole_data, title = None, subtitle = None):
     """
     Creates a 2D histogram of dipole orientations.
@@ -367,10 +369,6 @@ def make_dipole_contour_plot(dipole_data, title = None, subtitle = None):
     
     return fig
 
-
-import numpy as np
-import plotly.graph_objects as go
-
 def plot_mean_dipole_orientation(dipole_data):
     """
     Creates a 3D plot with each molecule represented by a cone.
@@ -400,9 +398,6 @@ def plot_mean_dipole_orientation(dipole_data):
                             w = mean_uvw['Dz']))
     
     return fig
-
-
-from plotly.subplots import make_subplots
 
 def plot_mean_dipole_angles(dipole_data, title = 'Mean Dipole Angles'):
     """
@@ -471,13 +466,7 @@ def plot_mean_dipole_angles(dipole_data, title = 'Mean Dipole Angles'):
     return fig_cos, fig_phi
 
 
-# -----------------------------------  File Input / Output for LAMMPS ------------------------------
-
-import pandas as pd
-import re
-import numpy as np
-import io
-
+# -----------------------------------  Topology ------------------------------
 def add_bond_data(lammps_xyz_file, bond_pairs):
     """
     Add bond information to a LAMMPS structure data file.
@@ -547,7 +536,8 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
     # column:  0                1           2           3       4          5          6         7  8  9 10
     # bond_index bond_type_number atom1_index atom2_index comment atom1_type atom2_type Boundary: nx ny nz
     bonds = np.empty((0, 11))
-    
+
+    # bonds could be a structured array for better code reuse
     #dtype=[('bond_index', np.int), 
     #                                 ('bond_type',  np.int), 
     #                                 ('atom1_index',np.int),
@@ -588,8 +578,6 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
     for bond_type_index, pair in bond_pairs.iterrows():
 
         print(f'Next pair: {pair["element1"]} - {pair["element2"]} cutoff: {pair["cutoff"]}')
-
-        bonds_added = 0
 
         # Get atom type number that corresponds to the element name
 
@@ -700,11 +688,9 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
                                                        int(transform_flags[1]),
                                                        int(transform_flags[2])]))
 
-                            bonds_added = bonds_added + 1
-
                             break
 
-        print(f'Bonds found: {bonds_added}')
+        print(f'Bonds found: {bonds.shape[0]}')
        
     # debug
     #print(bonds)
@@ -745,7 +731,7 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
     # This is preferable to translating the coordinates outside the box because 
     # LAMMPS will move all atoms inside the box on import
     
-    string_stream = io.StringIO()
+    string_stream = StringIO()
     
     # Example LAMMPS data file line of atomic coordinates
     # index type  charge       x                  y               z            nx ny nz
@@ -783,14 +769,11 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
     with open(lammps_xyz_file, 'r') as data_file:
         file_text = data_file.read()
 
-    file_text_modified = re.sub('(\s*)(\d+)(\s+)(atoms.*?\n)',
-                                f'\g<1>\g<2>\g<3>\g<4>\g<1>{bonds.shape[0]}\g<3>bonds\n',
+    file_text_modified = re.sub('\n(\s*)(\d+)(\s+)(atoms.*?)',
+                                f'\n\g<1>\g<2>\g<3>\g<4>\g<1>{bonds.shape[0]}\g<3>bonds',
                                 file_text)
 
-    # debug
-    print(file_text_modified)
-
-    if not file_text_modified:
+    if len(file_text_modified) == len(file_text):
         print('Could not add number of bonds to file header')
     else:
         with open(lammps_xyz_file, 'w') as data_file:
@@ -866,17 +849,15 @@ def get_atom_coordinates(text):
 
                 if data_search_result:
 
-                    if len(data_search_result) == 3:
+                    # Column format: x, y, z, ...
+                    charge_index = None
+                    x_index = 0
 
-                        # x, y, z
-                        x_index = 0
-                        charge_index = None
+                    if len(data_search_result) == 4:
 
-                    elif len(data_search_result) == 4:
-
-                        # charge, x, y, z
-                        x_index = 1
+                        # Column format: charge, x, y, z
                         charge_index = 0
+                        x_index = 1
                                    
                     if charge_index != None:
                         charge = float(data_search_result[charge_index])
@@ -894,7 +875,6 @@ def get_atom_coordinates(text):
         print('No text that looks like an atomic coordinates section found.')
                 
     return (coords, charge_data)
-
 
 def find_connected_atoms(atom_index, bonds, atom_list):
     """
@@ -931,8 +911,6 @@ def find_connected_atoms(atom_index, bonds, atom_list):
         
             atom_list.append(int(bond[2]))
             find_connected_atoms(int(bond[2]), np.delete(bonds, bond_index, axis=0), atom_list)
-            
-        
 
 def add_angle_dihedral_data(file, bonds):
     """
@@ -1100,6 +1078,20 @@ def add_angle_dihedral_data(file, bonds):
         
         data_file.write('\nDihedrals\n\n')
         np.savetxt(data_file, dihedrals, fmt='%s')
+
+    # Add number of angles, dihedrals to file header
+    with open(file, 'r') as data_file:
+        file_text = data_file.read()
+
+    file_text_modified = re.sub('\n(\s*)(\d+)(\s+)(bonds.*?)',
+                                f'\n\g<1>\g<2>\g<3>\g<4>\n\g<1>{angles.shape[0]}\g<3>angles\n\g<1>{dihedrals.shape[0]}\g<3>dihedrals',
+                                file_text)
+
+    if len(file_text_modified) == len(file_text):
+        print('Could not add number of bonds to file header')
+    else:
+        with open(file, 'w') as data_file:
+            data_file.write(file_text_modified)
         
     print(f'Added {angles.shape[0]} angles to {file}')
     print(f'Added {dihedrals.shape[0]} dihedrals to {file}')
