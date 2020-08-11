@@ -13,6 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/kevinwhitham/lammps_helper",
     packages=setuptools.find_packages(),
+    install_requires=['numpy', 'plotly', 'pandas'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
