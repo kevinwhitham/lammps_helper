@@ -21,7 +21,7 @@ try:
                     f.write(cell.format(**args))
                     print(f'Overwriting {line}')
 
-except:
+except NameError:
     print('IPython not detected. %%writetemplate not available.')
         
 
@@ -536,7 +536,8 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
     # column:  0                1           2           3       4          5          6         7  8  9 10
     # bond_index bond_type_number atom1_index atom2_index comment atom1_type atom2_type Boundary: nx ny nz
     bonds = np.empty((0, 11))
-    
+
+    # bonds could be a structured array for better code reuse
     #dtype=[('bond_index', np.int), 
     #                                 ('bond_type',  np.int), 
     #                                 ('atom1_index',np.int),
@@ -577,8 +578,6 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
     for bond_type_index, pair in bond_pairs.iterrows():
 
         print(f'Next pair: {pair["element1"]} - {pair["element2"]} cutoff: {pair["cutoff"]}')
-
-        bonds_added = 0
 
         # Get atom type number that corresponds to the element name
 
@@ -689,11 +688,9 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
                                                        int(transform_flags[1]),
                                                        int(transform_flags[2])]))
 
-                            bonds_added = bonds_added + 1
-
                             break
 
-        print(f'Bonds found: {bonds_added}')
+        print(f'Bonds found: {bonds.shape[0]}')
        
     # debug
     #print(bonds)
@@ -766,6 +763,21 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
         with open(lammps_xyz_file, 'a') as data_file:
             data_file.write('\nBonds\n\n')
             np.savetxt(data_file, bonds, fmt='%s')
+
+
+    # Add number of bonds to file header
+    with open(lammps_xyz_file, 'r') as data_file:
+        file_text = data_file.read()
+
+    file_text_modified = re.sub('\n(\s*)(\d+)(\s+)(atoms.*?)',
+                                f'\n\g<1>\g<2>\g<3>\g<4>\g<1>{bonds.shape[0]}\g<3>bonds',
+                                file_text)
+
+    if len(file_text_modified) == len(file_text):
+        print('Could not add number of bonds to file header')
+    else:
+        with open(lammps_xyz_file, 'w') as data_file:
+            data_file.write(file_text_modified)
     
     print(f'Added {bonds.shape[0]} bonds to {lammps_xyz_file}')
     
@@ -837,17 +849,15 @@ def get_atom_coordinates(text):
 
                 if data_search_result:
 
-                    if len(data_search_result) == 3:
+                    # Column format: x, y, z, ...
+                    charge_index = None
+                    x_index = 0
 
-                        # x, y, z
-                        x_index = 0
-                        charge_index = None
+                    if len(data_search_result) == 4:
 
-                    elif len(data_search_result) == 4:
-
-                        # charge, x, y, z
-                        x_index = 1
+                        # Column format: charge, x, y, z
                         charge_index = 0
+                        x_index = 1
                                    
                     if charge_index != None:
                         charge = float(data_search_result[charge_index])
@@ -1068,6 +1078,20 @@ def add_angle_dihedral_data(file, bonds):
         
         data_file.write('\nDihedrals\n\n')
         np.savetxt(data_file, dihedrals, fmt='%s')
+
+    # Add number of angles, dihedrals to file header
+    with open(file, 'r') as data_file:
+        file_text = data_file.read()
+
+    file_text_modified = re.sub('\n(\s*)(\d+)(\s+)(bonds.*?)',
+                                f'\n\g<1>\g<2>\g<3>\g<4>\n\g<1>{angles.shape[0]}\g<3>angles\n\g<1>{dihedrals.shape[0]}\g<3>dihedrals',
+                                file_text)
+
+    if len(file_text_modified) == len(file_text):
+        print('Could not add number of bonds to file header')
+    else:
+        with open(file, 'w') as data_file:
+            data_file.write(file_text_modified)
         
     print(f'Added {angles.shape[0]} angles to {file}')
     print(f'Added {dihedrals.shape[0]} dihedrals to {file}')

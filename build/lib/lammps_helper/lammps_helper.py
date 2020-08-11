@@ -777,6 +777,24 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
         with open(lammps_xyz_file, 'a') as data_file:
             data_file.write('\nBonds\n\n')
             np.savetxt(data_file, bonds, fmt='%s')
+
+
+    # Add number of bonds to file header
+    with open(lammps_xyz_file, 'r') as data_file:
+        file_text = data_file.read()
+
+    file_text_modified = re.sub('(\s*)(\d+)(\s+)(atoms.*?\n)',
+                                f'\g<1>\g<2>\g<3>\g<4>\g<1>{bonds.shape[0]}\g<3>bonds\n',
+                                file_text)
+
+    # debug
+    print(file_text_modified)
+
+    if not file_text_modified:
+        print('Could not add number of bonds to file header')
+    else:
+        with open(lammps_xyz_file, 'w') as data_file:
+            data_file.write(file_text_modified)
     
     print(f'Added {bonds.shape[0]} bonds to {lammps_xyz_file}')
     
