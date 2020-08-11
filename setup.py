@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="lammps_helper-kevinwhitham",
+    name="lammps_helper",
     version="0.1.2",
     author="Kevin Whitham",
     author_email="kevin.whitham@gmail.com",
