@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="lammps_helper-kevinwhitham",
-    version="0.1.1",
+    version="0.1.2",
     author="Kevin Whitham",
     author_email="kevin.whitham@gmail.com",
     description="Helps with LAMMPS input/output",
