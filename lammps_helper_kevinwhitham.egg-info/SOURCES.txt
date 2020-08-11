@@ -1,9 +1,0 @@
-README.md
-setup.py
-lammps_helper/__init__.py
-lammps_helper/lammps_helper.py
-lammps_helper_kevinwhitham.egg-info/PKG-INFO
-lammps_helper_kevinwhitham.egg-info/SOURCES.txt
-lammps_helper_kevinwhitham.egg-info/dependency_links.txt
-lammps_helper_kevinwhitham.egg-info/requires.txt
-lammps_helper_kevinwhitham.egg-info/top_level.txt

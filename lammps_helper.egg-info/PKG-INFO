@@ -1,5 +1,5 @@
 Metadata-Version: 2.1
-Name: lammps-helper-kevinwhitham
+Name: lammps-helper
 Version: 0.1.2
 Summary: Helps with LAMMPS input/output
 Home-page: https://github.com/kevinwhitham/lammps_helper
