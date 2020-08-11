@@ -537,6 +537,9 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
     # bond_index bond_type_number atom1_index atom2_index comment atom1_type atom2_type Boundary: nx ny nz
     bonds = np.empty((0, 11))
 
+    # keep track of the number of bond types
+    bond_types = np.empty((0,2))
+
     # bonds could be a structured array for better code reuse
     #dtype=[('bond_index', np.int), 
     #                                 ('bond_type',  np.int), 
@@ -576,6 +579,8 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
     atom_coords = np.hstack((atom_coords, np.zeros((atom_coords.shape[0],3))))
 
     for bond_type_index, pair in bond_pairs.iterrows():
+
+        new_bonds_found = 0
 
         print(f'Next pair: {pair["element1"]} - {pair["element2"]} cutoff: {pair["cutoff"]}')
 
@@ -633,7 +638,7 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
             for atom2 in type2_search_array:
 
                 # atom1, atom2 data structure:
-                # column:  0          1 2  3  4      5      6      7
+                # row:     0          1 2  3  4      5      6      7
                 # atom_index, atom_type x, y, z x_flag y_flag z_flag
                 
                 # construct a matrix to translate atom coordinates by unit cell vectors
@@ -674,10 +679,29 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
                             # store the transforms made to atoms across the box boundary
                             transform_flags = np.array(-transform * transform_direction, dtype='<i8')
 
+                            # for printing out how many bonds of the current type were found
+                            new_bonds_found = new_bonds_found + 1
+
+                            bond_type_str = str(atom1[1]) + str(atom2[1])
+
+                            # get the bond type number from the string of atom types
+                            bond_type_index = np.argwhere(bond_types == bond_type_str)
+
+                            # bond types have two equivalent configurations i.e. 'N-C' == 'C-N'
+                            if not bond_type_index.any():
+                                bond_type_index = np.argwhere(bond_types == bond_type_str[::-1])
+
+                            if bond_type_index.any():
+                                # this bond type has already been found
+                                bond_type = bond_types[bond_type_index[0][0]][0]
+                            else:
+                                # add a new bond type
+                                bond_type = bond_types.shape[0] + 1
+                                bond_types = np.vstack((bond_types, [bond_type, bond_type_str]))
+
                             # save the bond index, bond type number, indices of the bonded atoms, and a comment with the atom names and types
-                            
                             bonds = np.vstack((bonds, [bonds.shape[0]+1,
-                                                       bond_type_index+1,
+                                                       bond_type,
                                                        int(atom1[0]),
                                                        int(atom2[0]),
                                                        f'# {pair["element1"]} - {pair["element2"]}',
@@ -690,7 +714,7 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
 
                             break
 
-        print(f'Bonds found: {bonds.shape[0]}')
+        print(f'Bonds found: {new_bonds_found}')
        
     # debug
     #print(bonds)
@@ -769,8 +793,13 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
     with open(lammps_xyz_file, 'r') as data_file:
         file_text = data_file.read()
 
+    bond_pattern       = f'\g<1>{bonds.shape[0]}\g<3>bonds'
+    bond_types_pattern = f'\g<1>{bond_types.shape[0]}\g<3>bond types'
+
     file_text_modified = re.sub('\n(\s*)(\d+)(\s+)(atoms.*?)',
-                                f'\n\g<1>\g<2>\g<3>\g<4>\g<1>{bonds.shape[0]}\g<3>bonds',
+                                f'\n\g<1>\g<2>\g<3>\g<4>' +
+                                bond_pattern +
+                                bond_types_pattern,
                                 file_text)
 
     if len(file_text_modified) == len(file_text):
@@ -1083,8 +1112,17 @@ def add_angle_dihedral_data(file, bonds):
     with open(file, 'r') as data_file:
         file_text = data_file.read()
 
-    file_text_modified = re.sub('\n(\s*)(\d+)(\s+)(bonds.*?)',
-                                f'\n\g<1>\g<2>\g<3>\g<4>\n\g<1>{angles.shape[0]}\g<3>angles\n\g<1>{dihedrals.shape[0]}\g<3>dihedrals',
+    angles_pattern         = f'\n\g<1>{angles.shape[0]}\g<3>angles'
+    angle_types_pattern    = f'\n\g<1>{angle_types.shape[0]}\g<3>angle types'
+    dihedrals_pattern      = f'\n\g<1>{dihedrals.shape[0]}\g<3>dihedrals'
+    dihedral_types_pattern = f'\n\g<1>{dihedral_types.shape[0]}\g<3>dihedral types'
+
+    file_text_modified = re.sub('\n(\s*)(\d+)(\s+)(bond types.*?)',
+                                f'\n\g<1>\g<2>\g<3>\g<4>' +
+                                angles_pattern +
+                                angle_types_pattern +
+                                dihedrals_pattern +
+                                dihedral_types_pattern,
                                 file_text)
 
     if len(file_text_modified) == len(file_text):
