@@ -1,4 +1,10 @@
 # lammps_helper
+## Install
+
+`pip install lammps_helper`
+
+## About
+
 **lammps_helper** is python code to help create input files for and extract output data from the molecular dynamics package LAMMPS. It contains just a few features that I needed for my specific project and is not meant to be general in any way.
 
 You're probably asking yourself 'Why do I need to download another package? Why doesn't this already exist?' So here is a table comparing lammps_helper to some other packages.
