@@ -768,8 +768,10 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
     else:
         
         np.savetxt(string_stream, atom_coords,  fmt=['%i', '%i', '%f', '%f', '%f', '%i', '%i', '%i'])
-    
-    file_text_with_flags = re.sub('(?s)(\nAtoms.*?\n)(.*?)((\n\w.*)|$)', f'\g<1>\n{string_stream.getvalue()}\n\n\g<3>', file_text)
+
+    # Atoms section starts with the word 'Atoms' on a new line or indented
+    # Atoms section ends with a non-digit character on a new line or indented or end of the file
+    file_text_with_flags = re.sub('(?s)(\n\s*Atoms.*?\n)(.*?)((\n\s*\D.*)|$)', f'\g<1>\n{string_stream.getvalue()}\n\n\g<3>', file_text)
     string_stream.close()
     
     if len(file_text_with_flags) != len(file_text):
