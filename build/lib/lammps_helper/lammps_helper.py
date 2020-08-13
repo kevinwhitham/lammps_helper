@@ -687,7 +687,7 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
                             # get the bond type number from the string of atom types
                             bond_type_index = np.argwhere(bond_types == bond_type_str)
 
-                            # bond types have two equivalent configurations i.e. 'N-C' == 'C-N'
+                            # reversed bond types are equivalent i.e. '23' == '32'
                             if not bond_type_index.any():
                                 bond_type_index = np.argwhere(bond_types == bond_type_str[::-1])
 
@@ -762,14 +762,16 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
     # 1     1     0.00         13.84100000       4.43835000       4.34810000   0  0  0
     
     if charges.shape[0]:
-        
-        np.savetxt(string_stream, np.insert(atom_coords, 3, charges, axis=1), fmt=['%i', '%i', '%f', '%f', '%f', '%f', '%i', '%i', '%i'])
+
+        np.savetxt(string_stream, np.insert(atom_coords, 2, charges.T, axis=1), fmt=['%i', '%i', '%f', '%f', '%f', '%f', '%i', '%i', '%i'])
         
     else:
         
         np.savetxt(string_stream, atom_coords,  fmt=['%i', '%i', '%f', '%f', '%f', '%i', '%i', '%i'])
-    
-    file_text_with_flags = re.sub('(?s)(\nAtoms.*?\n)(.*?)((\n\w.*)|$)', f'\g<1>\n{string_stream.getvalue()}\n\n\g<3>', file_text)
+
+    # Atoms section starts with the word 'Atoms' on a new line or indented
+    # Atoms section ends with a non-digit character on a new line or indented or end of the file
+    file_text_with_flags = re.sub('(?s)(\n\s*Atoms.*?\n)(.*?)((\n\s*\n\s*\D.*)|$)', f'\g<1>\n{string_stream.getvalue()}\n\n\g<3>', file_text)
     string_stream.close()
     
     if len(file_text_with_flags) != len(file_text):
