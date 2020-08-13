@@ -1,12 +1,26 @@
 Topology
 ========
 
-Creating bond topology
-----------------------
+Importing structure
+-------------------
 
 To create bond topology you first need a LAMMPS data file with the `Masses` and `Atoms`
-sections. The `Masses` section must have a comment after each atomic mass with the name
-of the element. This is generated automatically by `atomsk`. For example::
+sections. This can be generated from any structure file (cif, xyz, pdb, vesta, etc.) by
+the command-line tool `atomsk`::
+
+    atomsk structure.cif lmp
+
+It can also be generated other ways such as `topotools` or `pymatgen`::
+
+    import pymatgen.io.lammps.data as pgld
+    from pymatgen import Structure
+
+    pg_structure = Structure.from_file('structure.cif')
+    ld_object = pgld.LammpsData.from_structure(pg_structure)
+    ld_object.write_file('structure.lmp')
+
+The `Masses` section must have a comment after each mass with the name
+of the element. Element names are added automatically by `atomsk` but not by `pymatgen`. For example::
 
     Masses
 
@@ -18,9 +32,11 @@ of the element. This is generated automatically by `atomsk`. For example::
 The `Atoms` section lists all atom coordinates. It can optionally have a column with the
 atomic charges.
 
+Creating bond topology
+----------------------
 First specify pairs of atoms to bond and the maximum distance for bonding. The following
-will create bonds between nitrogen and carbon atoms up to 1.5 Angstroms apart and
-between carbon atoms up to 1.52 Angstroms apart::
+will create bonds between nitrogen and carbon atoms up to 1.5 Angstroms and
+between carbon atoms up to 1.52 Angstroms::
 
     import pandas as pd
 
