@@ -687,7 +687,7 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
                             # get the bond type number from the string of atom types
                             bond_type_index = np.argwhere(bond_types == bond_type_str)
 
-                            # bond types have two equivalent configurations i.e. 'N-C' == 'C-N'
+                            # reversed bond types are equivalent i.e. '23' == '32'
                             if not bond_type_index.any():
                                 bond_type_index = np.argwhere(bond_types == bond_type_str[::-1])
 
@@ -762,8 +762,8 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
     # 1     1     0.00         13.84100000       4.43835000       4.34810000   0  0  0
     
     if charges.shape[0]:
-        
-        np.savetxt(string_stream, np.insert(atom_coords, 3, charges, axis=1), fmt=['%i', '%i', '%f', '%f', '%f', '%f', '%i', '%i', '%i'])
+
+        np.savetxt(string_stream, np.insert(atom_coords, 2, charges.T, axis=1), fmt=['%i', '%i', '%f', '%f', '%f', '%f', '%i', '%i', '%i'])
         
     else:
         
