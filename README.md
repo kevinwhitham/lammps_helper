@@ -48,8 +48,8 @@ bond_pairs = pd.DataFrame(data = dict(element1 = ['N',  'C'],
                                        element2 = ['C',  'C'],
                                        cutoff   = [1.5, 1.52]))
 
-bonds =  lh.add_bond_data(f'my_structure.lmp', bond_pairs)
-angles = lh.add_angle_dihedral_data(f'my_structure.lmp', bonds)
+bonds =  lh.add_bond_data('my_structure.lmp', bond_pairs)
+angles = lh.add_angle_dihedral_data('my_structure.lmp', bonds)
 ```
 
 With lammps_helper you must specify each type of bond by the names of the atoms and a cutoff distance (in whatever units are used in the LAMMPS file, probably Angstroms). Any atoms of those types within that distance will be bonded. This code is very simple and probably can't handle cyclic molecules. If you have a structure with rings I suggest you try moltemplate or lammps-interface.
