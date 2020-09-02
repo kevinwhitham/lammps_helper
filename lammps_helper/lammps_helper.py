@@ -717,9 +717,13 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
         print(f'Bonds found: {new_bonds_found}')
        
     # debug
-    #print(bonds)
+    #print('Bonds:')
+    #print('Index, Type, Atom1, Atom2, Symbols')
+    #print(bonds[:,:5])
     #print('Translation flags')
     #print(atom_coords[:,-3:])
+
+    print('Setting translation flags for bonds at the boundary.')
     
     # Set translation flags for bonds that cross the boundary
     for bond, bond_index in zip(bonds, range(bonds.shape[0])):
@@ -760,7 +764,9 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
     # Example LAMMPS data file line of atomic coordinates
     # index type  charge       x                  y               z            nx ny nz
     # 1     1     0.00         13.84100000       4.43835000       4.34810000   0  0  0
-    
+
+    print('Writing Atoms section.')
+
     if charges.shape[0]:
 
         np.savetxt(string_stream, np.insert(atom_coords, 2, charges.T, axis=1), fmt=['%i', '%i', '%f', '%f', '%f', '%f', '%i', '%i', '%i'])
@@ -779,6 +785,9 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
         # rewrite the lammps file
         with open(lammps_xyz_file, 'w') as data_file:
             data_file.write(file_text_with_flags)
+
+            print('Writing bonds section.')
+
             data_file.write('\nBonds\n\n')
             np.savetxt(data_file, bonds, fmt='%s')
     else:
@@ -790,6 +799,7 @@ def add_bond_data(lammps_xyz_file, bond_pairs):
             data_file.write('\nBonds\n\n')
             np.savetxt(data_file, bonds, fmt='%s')
 
+    print('Writing header section.')
 
     # Add number of bonds to file header
     with open(lammps_xyz_file, 'r') as data_file:
@@ -854,13 +864,13 @@ def get_atom_coordinates(text):
 
     # find atoms section, everything from the word Atoms to the next line starting with another word
     # or the end of the string
-    search_result = re.search('\nAtoms.*?\n(.*)?((\n\w)|$)', text, re.DOTALL)
+    search_result = re.search(r'\nAtoms.*?\n(.*?)((\n\s*\n\s*\D.*)|$)', text, re.DOTALL)
     
     if search_result:
         
         atom_section_text = search_result.group(1)
         
-        search_result = re.findall(f'^\s*(\d+)\s+(\d+)\s+(.*)', atom_section_text, re.MULTILINE)
+        search_result = re.findall(r'^\s*(\d+)\s+(\d+)\s+(.*)', atom_section_text, re.MULTILINE)
 
         if search_result:
 
