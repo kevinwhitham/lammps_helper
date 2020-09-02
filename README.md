@@ -25,7 +25,9 @@ You're probably asking yourself 'Why do I need to download another package? Why 
 | **lammps-cython** | Another python wrapper for LAMMPS. Setup and run, extract output. | No structural manipulation.
 | **pymatgen** | General suite of tools for handling materials computations via python. Includes some LAMMPS input/output and control. Has a function that generates bonds. | No way to set specific bonds, uses a global distance parameter.
 | **moltemplate** | Generates LAMMPS data using molecule building instructions. | Can't import .cif, .xyz, etc. 
-
+| **MKTOP** | Creates topology | Designed for use with GROMACS |
+| **PRODRG** | Creates topology | Designed for use with united atom force fields |
+| **antechamber / AmberTools** | Creates topology and lots more | Designed for use with Amber |
 
 
 Obviously there is more than one workflow to create structure data for LAMMPS. The simplest is to write the LAMMPS data file by hand. That works for very simple structures up to about 10 atoms and/or bonds per unit cell. If there are no explicit bonds in your structure you can simply convert a .cif, .xyz or similar file into LAMMPS format with (from easiest to hardest) atomsk, topotools, lammps-interface, atomman, or pymatgen. If your structure has bonds and you don't want to write out all the bonds, angles, and dihedrals by hand you have a couple options. 
